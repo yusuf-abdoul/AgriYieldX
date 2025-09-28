@@ -1,15 +1,15 @@
 import { Routes, Route } from "react-router-dom";
-import { WalletProvider } from "./context/WalletContext";
 import FarmerDashboard from "./pages/FarmerDashboard";
 import InvestorDashboard from "./pages/InvestorDashboard";
 import BuyerDashboard from "./pages/BuyerDashboard";
 import Marketplace from "./pages/Marketplace";
 import Home from "./pages/Home";
 import Navbar from "./components/Navbar";
+import { ClientProviders } from "./context/WalletContext";
 
 export default function App() {
   return (
-    <WalletProvider>
+    <ClientProviders>
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
         {/* Navbar on all pages */}
         <Navbar />
@@ -34,6 +34,6 @@ export default function App() {
           </p>
         </footer>
       </div>
-    </WalletProvider>
+    </ClientProviders>
   );
 }

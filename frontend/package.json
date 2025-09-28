@@ -13,6 +13,7 @@
     "@hashgraph/hedera-wallet-connect": "^2.0.1-canary.24fffa7.0",
     "@hashgraph/sdk": "^2.73.2",
     "@tailwindcss/vite": "^4.1.13",
+    "@tanstack/react-query": "^5.90.2",
     "@walletconnect/universal-provider": "^2.21.9",
     "buffer": "^6.0.3",
     "ethers": "^6.15.0",

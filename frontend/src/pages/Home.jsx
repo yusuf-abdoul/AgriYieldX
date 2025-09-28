@@ -1,7 +1,8 @@
-import { useEffect, useState, useContext } from "react";
-import WalletContext from "../context/WalletContext";
+import { useEffect, useState } from "react";
+// import WalletContext from "../context/WalletContext";
 import FarmCard from "../components/FarmCard";
 import { contractService } from "../services/contractService";
+import { useDAppConnector } from "../context/WalletContext";
 
 const demoFarms = [
   {
@@ -31,14 +32,16 @@ const demoFarms = [
 ];
 
 export default function Home() {
-  const { connected } = useContext(WalletContext);
+  // const { connected } = useContext(WalletContext);
+  const { userAccountId } = useDAppConnector() ?? {};
   const [farms, setFarms] = useState([]);
+  // console.log("UserAccount", userAccountId);
 
   useEffect(() => {
     let mounted = true;
     const load = async () => {
       try {
-        const data = connected ? await contractService.getFarms() : [];
+        const data = userAccountId ? await contractService.getFarms() : [];
         if (mounted) setFarms(Array.isArray(data) && data.length ? data : demoFarms);
       } catch {
         if (mounted) setFarms(demoFarms);
@@ -46,11 +49,11 @@ export default function Home() {
     };
     load();
     return () => { mounted = false; };
-  }, [connected]);
+  }, []);
 
   const handleInvest = async (farmId, amount) => {
     try {
-      if (connected) {
+      if (userAccountId) {
         await contractService.invest(farmId, amount);
         alert("Investment successful!");
       } else {

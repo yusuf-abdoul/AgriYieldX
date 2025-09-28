@@ -1,115 +1,111 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { HashConnect } from 'hashconnect';
+import { useEffect, useState, createContext, useContext } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  HederaSessionEvent,
+  HederaJsonRpcMethod,
+  DAppConnector,
+  HederaChainId,
+} from '@hashgraph/hedera-wallet-connect';
+import { LedgerId } from '@hashgraph/sdk';
 
-const WalletContext = createContext({
-    connected: false,
-    accountId: null,
-    evmAddress: null,
-    hashconnect: null,
-    connect: () => { },
-    disconnect: () => { }
-});
+const projectId = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID;
+const queryClient = new QueryClient();
 
-export const WalletProvider = ({ children }) => {
-    const [connected, setConnected] = useState(false);
-    const [accountId, setAccountId] = useState(null);
-    const [evmAddress, setEvmAddress] = useState(null);
-    const [hashconnect, setHashconnect] = useState(null);
-
-    useEffect(() => {
-        const initHashConnect = async () => {
-            const origin = typeof window !== 'undefined' && window.location ? window.location.origin : '';
-            const appMetadata = {
-                name: "AgriYield DApp",
-                description: "Crowdfunding & Marketplace for farmers",
-                icon: origin ? `${origin}/favicon.ico` : undefined,
-                url: origin,
-            };
-
-            const hc = new HashConnect(true);
-            // Initialize on testnet. Newer hashconnect versions accept two params (metadata, network).
-            try {
-                await hc.init(appMetadata, "testnet");
-            } catch (e) {
-                console.error("HashConnect init failed:", e);
-                return;
-            }
-
-            hc.foundExtensionEvent.on((walletMetadata) => {
-                console.log("Found wallet:", walletMetadata);
-            });
-
-            hc.pairingEvent.on((pairingData) => {
-                const id = pairingData.accountIds[0];
-                setAccountId(id);
-                setEvmAddress(pairingData.accountIds[0]); // For simplicity, using accountId as evmAddress
-                setConnected(true);
-            });
-
-            hc.connectionStatusChangeEvent.on((connectionStatus) => {
-                if (!connectionStatus) {
-                    setConnected(false);
-                    setAccountId(null);
-                    setEvmAddress(null);
-                }
-            });
-
-            setHashconnect(hc);
-        };
-
-        initHashConnect();
-    }, []);
-
-    const connect = async () => {
-        if (!hashconnect) return;
-        try {
-            // Try to open HashPack extension connect prompt
-            await hashconnect.connectToLocalWallet();
-        } catch (e) {
-            // Fallback: create a pairing string for mobile/desktop HashPack
-            try {
-                const pairing = await hashconnect.connect();
-                const pairingString = pairing?.pairingString || pairing?.pairingData?.pairingString;
-                console.log("HashConnect pairing string:", pairingString);
-                alert("Open HashPack and scan the QR from browser console (pairing string logged).\nIf the extension is installed, make sure it's enabled on this site.");
-            } catch (err) {
-                console.error("HashConnect connect failed:", err);
-            }
-        }
-    };
-
-    const disconnect = async () => {
-        if (hashconnect) {
-            await hashconnect.disconnect();
-            setConnected(false);
-            setAccountId(null);
-            setEvmAddress(null);
-        }
-    };
-
-    return (
-        <WalletContext.Provider
-            value={{
-                connected,
-                accountId,
-                evmAddress,
-                hashconnect,
-                connect,
-                disconnect
-            }}
-        >
-            {children}
-        </WalletContext.Provider>
-    );
+const metadata = {
+  name: 'AgriYieldX',
+  description: 'Decentralized Agricultural Market Place',
+  url: 'ur app image url',
+  icons: ['link to ur icon'],
 };
 
-export const useWallet = () => {
-    const context = useContext(WalletContext);
-    if (!context) {
-        throw new Error('useWallet must be used within a WalletProvider');
+
+const DAppConnectorContext = createContext(null);
+export const useDAppConnector = () => useContext(DAppConnectorContext);
+
+
+export function ClientProviders({ children }) {
+  const [dAppConnector, setDAppConnector] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+  const [userAccountId, setUserAccountId] = useState(null);
+  const [sessionTopic, setSessionTopic] = useState(null);
+
+  useEffect(() => {
+    if (!dAppConnector) return;
+
+
+    const connectorWithEvents = dAppConnector;
+    const subscription = connectorWithEvents.events$?.subscribe((event) => {
+      if (event.name === 'accountsChanged' || event.name === 'chainChanged') {
+        setUserAccountId(dAppConnector.signers?.[0]?.getAccountId().toString() ?? null);
+
+        if (event.data && event.data.topic) {
+          setSessionTopic(event.data.topic);
+        } else if (dAppConnector.signers?.[0]?.topic) {
+          setSessionTopic(dAppConnector.signers[0].topic);
+        } else {
+          setSessionTopic(null);
+        }
+      } else if (event.name === 'session_delete' || event.name === 'sessionDelete') {
+        setUserAccountId(null);
+        setSessionTopic(null);
+      }
+    });
+
+    setUserAccountId(dAppConnector.signers?.[0]?.getAccountId().toString() ?? null);
+    if (dAppConnector.signers?.[0]?.topic) setSessionTopic(dAppConnector.signers[0].topic);
+    return () => subscription && subscription.unsubscribe();
+  }, [dAppConnector]);
+
+  const disconnect = async () => {
+    if (dAppConnector && sessionTopic) {
+      await dAppConnector.disconnect(sessionTopic);
+      setUserAccountId(null);
+      setSessionTopic(null);
     }
-    return context;
-};
+  };
 
-export default WalletContext;
+  const refresh = () => {
+    if (dAppConnector) {
+      setUserAccountId(dAppConnector.signers?.[0]?.getAccountId().toString() ?? null);
+      setSessionTopic(dAppConnector.signers?.[0]?.topic ?? null);
+    }
+  };
 
+  useEffect(() => {
+    let isMounted = true;
+    async function init() {
+      const connector = new DAppConnector(
+        metadata,
+        LedgerId.TESTNET,
+        projectId,
+        Object.values(HederaJsonRpcMethod),
+        [HederaSessionEvent.ChainChanged, HederaSessionEvent.AccountsChanged],
+        [HederaChainId.Mainnet, HederaChainId.Testnet],
+      );
+      await connector.init();
+      if (isMounted) {
+        setDAppConnector(connector);
+        setIsReady(true);
+      }
+    }
+    init().catch(console.log);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (!isReady)
+    return (
+      <div style={{ color: 'white', textAlign: 'center', marginTop: '2rem' }}>
+        Loading wallet...
+      </div>
+    );
+
+  return (
+    <DAppConnectorContext.Provider value={{ dAppConnector, userAccountId, sessionTopic, disconnect, refresh }}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </DAppConnectorContext.Provider>
+  );
+}

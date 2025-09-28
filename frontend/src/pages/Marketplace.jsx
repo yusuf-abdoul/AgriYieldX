@@ -1,9 +1,9 @@
-import { useEffect, useState, useContext } from "react";
-import WalletContext from "../context/WalletContext";
+import { useEffect, useState } from "react";
 import ListCard from "../components/ListCard";
 import ChatBox from "../components/Chatbox";
 import { contractService } from "../services/contractService";
 import { hcsService } from "../services/hcsService";
+import { useDAppConnector } from "../context/WalletContext";
 
 const demoListings = [
   {
@@ -30,7 +30,7 @@ const demoListings = [
 ];
 
 export default function Marketplace() {
-  const { connected, hashconnect } = useContext(WalletContext);
+  const { userAccountId } = useDAppConnector() ?? {};
   const [listings, setListings] = useState([]);
   const [messages, setMessages] = useState([]);
   const [showChat, setShowChat] = useState(false);
@@ -41,7 +41,7 @@ export default function Marketplace() {
     let mounted = true;
     const load = async () => {
       try {
-        const data = connected ? await contractService.getListings() : [];
+        const data = await contractService.getListings();
         if (mounted) setListings(Array.isArray(data) && data.length ? data : demoListings);
       } catch {
         if (mounted) setListings(demoListings);
@@ -58,11 +58,11 @@ export default function Marketplace() {
     return () => {
       mounted = false;
     };
-  }, [connected, topicId]);
+  }, [topicId]);
 
   const handleBuy = async (listing) => {
     try {
-      if (connected) {
+      if (userAccountId) {
         await contractService.purchase(listing.id, 1);
       } else {
         alert("Please connect your wallet before purchasing.");
@@ -81,7 +81,7 @@ export default function Marketplace() {
       <div className="lg:col-span-2 space-y-4">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Marketplace</h1>
         <div className="rounded-2xl shadow-md bg-white dark:bg-gray-800 p-6">
-          {!connected ? (
+          {!userAccountId ? (
             <p className="text-sm text-gray-700 dark:text-gray-400">Please connect your wallet to access the marketplace.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import WalletConnect from "./WalletConnect";
 
-export default function Navbar({ onWalletConnect }) {
+export default function Navbar() {
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -47,7 +47,7 @@ export default function Navbar({ onWalletConnect }) {
               </div>
             </div>
           </div>
-          <WalletConnect onConnected={onWalletConnect} />
+          <WalletConnect />
         </div>
       </div>
     </nav>
