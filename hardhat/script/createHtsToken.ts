@@ -1,8 +1,8 @@
 import { Client, AccountId, PrivateKey, TokenCreateTransaction, Hbar, TokenType, TokenSupplyType, TokenId } from "@hashgraph/sdk";
 
 async function main() {
-  const OPERATOR_ID = process.env.OPERATOR_ID;
-  const OPERATOR_KEY = process.env.OPERATOR_KEY;
+  const OPERATOR_ID = "0.0.6853854";
+  const OPERATOR_KEY = "302e020100300506032b657004220420abe912918223c8c02c16b5b0edfb98ad8d2caf5f497ac33e00d97a24c3638758";
 
   if (!OPERATOR_ID || !OPERATOR_KEY) {
     throw new Error("Missing OPERATOR_ID or OPERATOR_KEY in environment. Set them in hardhat/.env");
@@ -15,7 +15,7 @@ async function main() {
   const INITIAL_SUPPLY = BigInt(process.env.HTS_INITIAL_SUPPLY || "1000000000"); // 1,000,000,000 units (pre-decimals)
 
   const operatorId = AccountId.fromString(OPERATOR_ID);
-  const operatorKey = PrivateKey.fromStringECDSA(OPERATOR_KEY);
+  const operatorKey = PrivateKey.fromStringED25519(OPERATOR_KEY);
 
   const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 
@@ -48,7 +48,7 @@ async function main() {
   }
 
   const tokenIdStr = tokenId.toString();
-  const evmAddress = tokenId.toSolidityAddress();
+  const evmAddress = tokenId.toEvmAddress();
 
   console.log("HTS token created.");
   console.log("Token ID:", tokenIdStr);
