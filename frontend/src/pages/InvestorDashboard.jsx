@@ -1,5 +1,4 @@
-import { useEffect, useState, useContext } from "react";
-// import WalletContext from "../context/WalletContext";
+import { useEffect, useState } from "react";
 import FarmCard from "../components/FarmCard";
 import { contractService } from "../services/contractService";
 import Sidebar from "../components/Sidebar";

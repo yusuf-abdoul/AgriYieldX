@@ -32,7 +32,7 @@ const demoListings = [
 export default function Marketplace() {
   const { userAccountId } = useDAppConnector() ?? {};
   const [listings, setListings] = useState([]);
-  const [messages, setMessages] = useState([]);
+  // const [messages, setMessages] = useState([]);
   const [showChat, setShowChat] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
   const topicId = import.meta.env.VITE_HCS_TOPIC_ID;
@@ -49,11 +49,11 @@ export default function Marketplace() {
     };
     load();
 
-    if (topicId) {
-      hcsService.subscribeToTopic(topicId, (msg) => {
-        setMessages((prev) => [...prev, msg]);
-      });
-    }
+    // if (topicId) {
+    //   hcsService.subscribeToTopic(topicId, (msg) => {
+    //     setMessages((prev) => [...prev, msg]);
+    //   });
+    // }
 
     return () => {
       mounted = false;

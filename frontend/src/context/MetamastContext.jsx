@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from "react";
 
 const defaultValue = {
   metamaskAccountAddress: '',
-  setMetamaskAccountAddress: (newValue) => { },
+  setMetamaskAccountAddress: () => { },
 }
 
 export const MetamaskContext = createContext(defaultValue)
